@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — PuzzleSnap AI{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="ps-eyebrow" style="justify-content:center;"><i class="fa-solid fa-gauge-high"></i> Admin</div>
+  <h1>Admin Dashboard</h1>
+  <p>Anonymous game analytics only. No image data is ever stored — there is nothing privacy-sensitive to view here.</p>
+</div>
+
+<div class="ps-section-tight">
+
+  <!-- KPI row -->
+  <div class="ps-grid ps-grid-4" style="margin-bottom:36px;">
+    {% for icon, color, label, value in [
+      ("fa-gamepad",      "var(--violet-soft)", "Total Games",         stats.total_games_played),
+      ("fa-stopwatch",    "var(--cyan)",         "Avg. Time (s)",       stats.average_completion_time),
+      ("fa-hand-pointer", "var(--gold)",          "Avg. Moves",          stats.average_moves),
+      ("fa-shield-halved","var(--green)",         "Images in DB",        "0"),
+    ] %}
+    <div class="ps-card" style="padding:24px;text-align:center;">
+      <div class="feature-icon" style="margin:0 auto 12px; --icon-color: {{ color }}; color: var(--icon-color);"><i class="fa-solid {{ icon }}"></i></div>
+      <div style="font-family:var(--font-mono);font-size:1.9rem;font-weight:700;color:var(--text);">{{ value }}</div>
+      <div style="font-size:0.78rem;color:var(--text-faint);margin-top:4px;">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- By difficulty breakdown -->
+  {% if stats.by_difficulty %}
+  <div class="ps-card" style="padding:28px;margin-bottom:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <h3 style="font-family:var(--font-display);font-size:1.05rem;margin:0;">Performance by Difficulty</h3>
+      <a href="/api/admin/export-csv" class="ps-btn ps-btn-secondary ps-btn-sm">
+        <i class="fa-solid fa-download"></i> Export CSV
+      </a>
+    </div>
+    <div class="ps-table-wrap">
+      <table class="ps-table">
+        <thead>
+          <tr><th>Difficulty</th><th>Games</th><th>Avg Time</th><th>Avg Moves</th><th>Avg Score</th></tr>
+        </thead>
+        <tbody>
+          {% for row in stats.by_difficulty %}
+          <tr>
+            <td><span class="diff-pill">{{ row.difficulty }}</span></td>
+            <td>{{ row.games }}</td>
+            <td style="font-family:var(--font-mono);">{{ "%.1f"|format(row.avg_time or 0) }}s</td>
+            <td style="font-family:var(--font-mono);">{{ "%.1f"|format(row.avg_moves or 0) }}</td>
+            <td style="font-family:var(--font-mono);color:var(--gold);">{{ "%.0f"|format(row.avg_score or 0) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent sessions -->
+  {% if boards %}
+  <div class="ps-card" style="padding:28px;margin-bottom:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <h3 style="font-family:var(--font-display);font-size:1.05rem;margin:0;">Recent Sessions (top 50 by score)</h3>
+    </div>
+    <div class="ps-table-wrap">
+      <table class="ps-table">
+        <thead>
+          <tr><th>Rank</th><th>Score</th><th>Difficulty</th><th>Time</th><th>Moves</th><th>Hints</th><th>Date</th><th>Session ID</th></tr>
+        </thead>
+        <tbody>
+          {% for row in boards %}
+          <tr>
+            <td>
+              <span class="rank-badge {% if loop.index == 1 %}top1{% elif loop.index == 2 %}top2{% elif loop.index == 3 %}top3{% endif %}">
+                {{ loop.index }}
+              </span>
+            </td>
+            <td style="font-family:var(--font-mono);font-weight:700;color:var(--gold);">{{ row.final_score }}</td>
+            <td><span class="diff-pill">{{ row.difficulty }}</span></td>
+            <td style="font-family:var(--font-mono);">{{ '%02d'|format(row.completion_time // 60) }}:{{ '%02d'|format(row.completion_time % 60) }}</td>
+            <td>{{ row.total_moves }}</td>
+            <td>{{ row.hints_used }}</td>
+            <td style="color:var(--text-faint);font-size:0.82rem;">{{ row.played_date }}</td>
+            <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-faint);">{{ row.session_id[:12] }}…</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="ps-card" style="padding:60px;text-align:center;color:var(--text-faint);">
+    <i class="fa-solid fa-inbox" style="font-size:2.5rem;margin-bottom:16px;display:block;opacity:0.3;"></i>
+    No game sessions recorded yet.
+  </div>
+  {% endif %}
+
+  <!-- Daily plays bar chart -->
+  {% if stats.daily_plays %}
+  <div class="ps-card" style="padding:28px;margin-bottom:28px;">
+    <h3 style="font-family:var(--font-display);font-size:1.05rem;margin-bottom:20px;">Daily Activity (last 14 days)</h3>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:140px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+      {% set max_d = stats.daily_plays | map(attribute='games') | max %}
+      {% for day in stats.daily_plays | reverse %}
+      {% set h = ((day.games / max_d) * 100)|int if max_d > 0 else 0 %}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-faint);">{{ day.games }}</span>
+        <div style="--bar-height: {{ h }}%; width:100%; height:var(--bar-height); background:linear-gradient(to top,var(--violet),var(--cyan)); border-radius:4px 4px 0 0; min-height:3px;"></div>
+        <span style="font-size:0.6rem;color:var(--text-faint);writing-mode:vertical-rl;transform:rotate(180deg);">{{ day.played_date[-5:] }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick links -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <a href="/api/admin/export-csv" class="ps-btn ps-btn-secondary"><i class="fa-solid fa-file-csv"></i> Export All Sessions CSV</a>
+    <a href="/analytics" class="ps-btn ps-btn-ghost"><i class="fa-solid fa-chart-line"></i> Public Analytics</a>
+    <a href="/settings" class="ps-btn ps-btn-ghost"><i class="fa-solid fa-sliders"></i> App Settings</a>
+    <a href="/leaderboard" class="ps-btn ps-btn-ghost"><i class="fa-solid fa-ranking-star"></i> Leaderboard</a>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Capture — PuzzleSnap AI{% endblock %}
+
+{% block content %}
+<div class="camera-wrap">
+  <div class="ps-eyebrow" style="justify-content:center;margin-bottom:10px;">
+    <i class="fa-solid fa-camera"></i> Step 1 of 2
+  </div>
+  <h1 style="font-size:2.1rem;text-align:center;margin-bottom:8px;">Take your photo</h1>
+  <p style="text-align:center;margin-bottom:30px;">Show a <strong style="color:var(--cyan)">👍 thumbs-up</strong> to trigger capture, or tap Manual Capture below.</p>
+
+  <!-- Difficulty selector -->
+  <div class="diff-quick-select" style="display:flex;gap:10px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;">
+    {% for key, size in [("easy",3),("medium",4),("hard",5),("expert",6)] %}
+    <button class="ps-btn ps-btn-sm ps-btn-secondary diff-pick-btn" data-difficulty="{{ key }}" style="gap:6px;">
+     <span class="diff-grid-icon" style="--grid-size: {{ size }}; display:inline-grid; grid-template-columns:repeat(var(--grid-size),5px); gap:2px; vertical-align:middle;">
+        {% for _ in range(size*size) %}<span style="width:4px;height:4px;background:currentColor;border-radius:1px;opacity:.6;display:block;"></span>{% endfor %}
+      </span>
+      {{ key | capitalize }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- Camera frame -->
+  <div class="camera-frame ps-card" id="cameraFrame">
+    <video id="cameraVideo" autoplay muted playsinline></video>
+    <canvas id="overlayCanvas"></canvas>
+
+    <!-- HUD corners -->
+    <div class="camera-hud">
+      <div class="hud-corner tl"></div>
+      <div class="hud-corner tr"></div>
+      <div class="hud-corner bl"></div>
+      <div class="hud-corner br"></div>
+    </div>
+
+    <!-- Gesture status pill -->
+    <div class="gesture-status" id="gestureStatus">
+      <div class="dot"></div>
+      <span id="gestureStatusLabel">Starting camera…</span>
+    </div>
+
+    <!-- Quality warning -->
+    <div class="quality-warning" id="qualityWarning">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Quality warning</span>
+    </div>
+
+    <!-- Countdown overlay -->
+    <div class="countdown-overlay" id="countdownOverlay">
+      <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+
+    <!-- Camera flash -->
+    <div class="camera-flash" id="cameraFlash"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="camera-controls">
+    <button class="ps-btn ps-btn-secondary" id="manualCaptureBtn">
+      <i class="fa-solid fa-camera-retro"></i> Manual Capture
+    </button>
+    <button class="ps-btn ps-btn-ghost" id="retakeBtn">
+      <i class="fa-solid fa-rotate-left"></i> Retake
+    </button>
+  </div>
+
+  <p class="camera-instructions">
+    <i class="fa-solid fa-shield-halved" style="color:var(--green)"></i>
+    Your photo is <strong>never stored</strong>. It's enhanced in RAM and sent back to your browser only.
+  </p>
+
+  <!-- Preview after capture -->
+  <div id="capturedPreviewWrap" class="captured-preview-wrap" style="display:none;">
+    <h3 style="font-family:var(--font-display);margin-bottom:14px;font-size:1.1rem;">Photo captured ✓</h3>
+    <img id="capturedPreviewImg" alt="Captured photo preview" />
+    <div style="margin-top:20px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <button class="ps-btn ps-btn-primary ps-btn-lg" id="startPuzzleBtn" disabled>
+        <i class="fa-solid fa-puzzle-piece"></i> Start Puzzle
+      </button>
+    </div>
+  </div>
+</div>
+
+<canvas id="fxCanvas"></canvas>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sync difficulty quick-select with sessionStorage
+const stored = sessionStorage.getItem('ps_difficulty') || 'easy';
+document.querySelectorAll('.diff-pick-btn').forEach(b => {
+  b.classList.toggle('ps-btn-primary', b.dataset.difficulty === stored);
+  b.classList.toggle('ps-btn-secondary', b.dataset.difficulty !== stored);
+  b.addEventListener('click', () => {
+    sessionStorage.setItem('ps_difficulty', b.dataset.difficulty);
+    document.querySelectorAll('.diff-pick-btn').forEach(x => {
+      x.classList.toggle('ps-btn-primary', x === b);
+      x.classList.toggle('ps-btn-secondary', x !== b);
+    });
+    window.PSAudio && PSAudio.beep();
+  });
+});
+</script>
+<script type="module" src="{{ url_for('static', filename='js/gesture.js') }}"></script>
+{% endblock %}

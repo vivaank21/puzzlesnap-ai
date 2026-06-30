@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Settings — PuzzleSnap AI{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="ps-eyebrow" style="justify-content:center;"><i class="fa-solid fa-sliders"></i> Preferences</div>
+  <h1>Settings</h1>
+  <p>Customize your PuzzleSnap AI experience. All preferences are saved to the database and persisted across sessions.</p>
+</div>
+
+<div class="ps-section-tight" style="max-width:720px;margin:0 auto;">
+
+  <div id="saveMsg" style="display:none;margin-bottom:20px;" class="ps-card">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;color:var(--green);">
+      <i class="fa-solid fa-circle-check"></i> Settings saved successfully.
+    </div>
+  </div>
+
+  <!-- Theme -->
+  <div class="ps-card" style="padding:28px;margin-bottom:22px;">
+    <h3 style="font-family:var(--font-display);font-size:1rem;margin-bottom:18px;">Appearance</h3>
+
+    <div style="margin-bottom:8px;font-size:0.85rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;">Theme</div>
+    <div class="theme-pick-row">
+      {% for val, icon, label in [("dark","fa-moon","Dark"),("light","fa-sun","Light")] %}
+      <button class="ps-card theme-pick {% if settings.theme == val %}selected{% endif %}" data-theme-val="{{ val }}" id="themePick{{ val | capitalize }}">
+        <i class="fa-solid {{ icon }}" style="font-size:1.4rem;margin-bottom:8px;display:block;color:var(--violet-soft);"></i>
+        <div style="font-family:var(--font-display);font-size:0.9rem;">{{ label }}</div>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Audio & Animations -->
+  <div class="ps-card" style="padding:28px;margin-bottom:22px;">
+    <h3 style="font-family:var(--font-display);font-size:1rem;margin-bottom:4px;">Audio & Animation</h3>
+
+    <div class="ps-toggle-row">
+      <div>
+        <h4>Sound Effects</h4>
+        <p>Shutter click, piece snap, countdown beeps, and victory fanfare.</p>
+      </div>
+      <label class="ps-switch">
+        <input type="checkbox" id="soundToggle" {% if settings.sound_enabled %}checked{% endif %}>
+        <div class="track"><div class="thumb"></div></div>
+      </label>
+    </div>
+
+    <div class="ps-toggle-row">
+      <div>
+        <h4>Animations</h4>
+        <p>GSAP scroll reveals, card hover lifts, and page transitions.</p>
+      </div>
+      <label class="ps-switch">
+        <input type="checkbox" id="animToggle" {% if settings.animation_enabled %}checked{% endif %}>
+        <div class="track"><div class="thumb"></div></div>
+      </label>
+    </div>
+  </div>
+
+  <!-- Default difficulty -->
+  <div class="ps-card" style="padding:28px;margin-bottom:32px;">
+    <h3 style="font-family:var(--font-display);font-size:1rem;margin-bottom:18px;">Default Difficulty</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;" id="diffSettingPicker">
+      {% for d in ["easy","medium","hard","expert"] %}
+      <button class="ps-btn ps-btn-sm diff-setting-btn ps-btn-ghost" data-diff="{{ d }}">
+        {{ d | capitalize }}
+      </button>
+      {% endfor %}
+    </div>
+    <p style="font-size:0.82rem;margin-top:12px;">This pre-selects the difficulty on the Capture page (stored in sessionStorage, not the database).</p>
+  </div>
+
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <button class="ps-btn ps-btn-primary" id="saveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+    <a href="/" class="ps-btn ps-btn-ghost"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Theme picker
+const themePicks = document.querySelectorAll('[data-theme-val]');
+let selectedTheme = '{{ settings.theme }}';
+themePicks.forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedTheme = btn.dataset.themeVal;
+    themePicks.forEach(b => b.classList.toggle('selected', b === btn));
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+    localStorage.setItem('ps_theme', selectedTheme);
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = selectedTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  });
+});
+
+// Sound toggle → localStorage mirror
+document.getElementById('soundToggle').addEventListener('change', function() {
+  localStorage.setItem('ps_sound', this.checked ? 'on' : 'off');
+});
+
+// Difficulty default (sessionStorage)
+const stored = sessionStorage.getItem('ps_difficulty') || 'easy';
+document.querySelectorAll('.diff-setting-btn').forEach(b => {
+  b.classList.toggle('ps-btn-primary', b.dataset.diff === stored);
+  b.classList.toggle('ps-btn-ghost', b.dataset.diff !== stored);
+  b.addEventListener('click', () => {
+    sessionStorage.setItem('ps_difficulty', b.dataset.diff);
+    document.querySelectorAll('.diff-setting-btn').forEach(x => {
+      x.classList.toggle('ps-btn-primary', x === b);
+      x.classList.toggle('ps-btn-ghost', x !== b);
+    });
+  });
+});
+
+// Save button → POST /api/settings
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const payload = {
+    theme: selectedTheme,
+    sound_enabled: document.getElementById('soundToggle').checked ? 1 : 0,
+    animation_enabled: document.getElementById('animToggle').checked ? 1 : 0,
+  };
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const msg = document.getElementById('saveMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+    window.PSAudio && PSAudio.correct();
+  } catch(e) {
+    alert('Save failed — please try again.');
+  }
+});
+</script>
+{% endblock %}

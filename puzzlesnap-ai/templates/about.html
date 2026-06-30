@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}About — PuzzleSnap AI{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="ps-eyebrow" style="justify-content:center;"><i class="fa-solid fa-circle-info"></i> About This Project</div>
+  <h1>PuzzleSnap AI</h1>
+  <p style="font-size:1.1rem;">"Capture. Shuffle. Solve." — A privacy-first AI photo puzzle game.</p>
+</div>
+
+<div class="about-block">
+
+  <h2>What is it?</h2>
+  <p>PuzzleSnap AI is an interactive web experience that blends computer vision, real-time hand gesture recognition, live camera capture, and classic sliding-puzzle gameplay into a single seamless session. Point your webcam at yourself, flash a thumbs-up, and your photo becomes the puzzle.</p>
+
+  <h2>How the privacy model works</h2>
+  <p>Most "AI camera" apps send your video stream to a remote server for processing. PuzzleSnap AI does not. Gesture detection runs entirely inside your browser as a WebAssembly module (MediaPipe Tasks Vision). The raw camera feed never touches the network. Only the single JPEG frame at the moment of capture is transmitted — and even that is processed in server RAM, re-encoded, sent back, and immediately discarded. Nothing reaches a database, filesystem, or cloud service.</p>
+
+  <ul class="privacy-list">
+    <li><i class="fa-solid fa-check"></i> Live camera stream: <strong>stays on your device</strong></li>
+    <li><i class="fa-solid fa-check"></i> Captured frame: <strong>processed in RAM, returned, then deleted</strong></li>
+    <li><i class="fa-solid fa-check"></i> Database: <strong>anonymous scores only</strong> — no images, no names</li>
+    <li><i class="fa-solid fa-check"></i> sessionStorage: <strong>automatically cleared</strong> when the tab closes or the puzzle is solved</li>
+    <li><i class="fa-solid fa-xmark" style="color:var(--coral);"></i> Cloud storage: <strong>none</strong></li>
+    <li><i class="fa-solid fa-xmark" style="color:var(--coral);"></i> Third-party analytics: <strong>none</strong></li>
+    <li><i class="fa-solid fa-xmark" style="color:var(--coral);"></i> Ads: <strong>none</strong></li>
+  </ul>
+
+  <h2>Technology stack</h2>
+  <div class="ps-grid ps-grid-2" style="margin:20px 0 30px;">
+    {% for side, items in [
+      ("Frontend", ["HTML5 + CSS3", "Bootstrap 5 (grid only)", "GSAP (animations)", "Canvas API (puzzle engine)", "MediaPipe Tasks Vision (WASM)", "Web Audio API (synthesized SFX)", "Font Awesome 6"]),
+      ("Backend",  ["Python 3.10+", "Flask 3", "Pillow / PIL (image enhancement)", "NumPy", "SQLite3 (anonymous stats only)"]),
+    ] %}
+    <div class="ps-card" style="padding:24px;">
+      <h4 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:14px;">{{ side }}</h4>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
+        {% for item in items %}
+        <li style="font-size:0.9rem;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-circle-dot" style="color:var(--violet-soft);font-size:.6rem;"></i> {{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h2>Puzzle engine</h2>
+  <p>Once a photo is captured and enhanced, slicing happens client-side on a hidden <code>&lt;canvas&gt;</code>. Each piece is drawn by reading a sub-rectangle of the source image onto its own canvas element, which is then placed as a positioned <code>&lt;div&gt;</code> on the board. Drag-and-drop is handled through the Pointer Events API (single code path for mouse and touch) with a magnetic snap zone at 28 % of piece size. All of this runs at 60 fps with no server communication.</p>
+
+  <h2>Scoring formula</h2>
+  <p>Score = base × 0.2 + time_bonus + moves_bonus − hint_penalty, where the base ranges from 1 000 (Easy) to 5 500 (Expert). Time and move bonuses are capped at 2× par, so a perfect run roughly doubles the base score. Each hint subtracts 5 % of base. The same formula is used in the browser for the live estimate and on the server for the authoritative record.</p>
+
+  <div style="margin-top:50px;text-align:center;">
+    <a href="/capture" class="ps-btn ps-btn-primary ps-btn-lg"><i class="fa-solid fa-camera"></i> Start Playing</a>
+  </div>
+
+</div>
+{% endblock %}
