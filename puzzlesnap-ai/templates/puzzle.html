@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Play — PuzzleSnap AI{% endblock %}
+
+{% block content %}
+<div class="puzzle-shell">
+
+  <!-- Top bar -->
+  <div class="puzzle-topbar">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <a href="/capture" class="ps-btn ps-btn-ghost ps-btn-sm"><i class="fa-solid fa-arrow-left"></i> New Photo</a>
+      <span class="badge" id="currentDifficultyLabel">Loading…</span>
+    </div>
+
+    <div class="puzzle-stat-group">
+      <div class="puzzle-stat"><i class="fa-solid fa-stopwatch"></i> <span id="statTimer">00:00</span></div>
+      <div class="puzzle-stat"><i class="fa-solid fa-hand-pointer"></i> <span id="statMoves">0</span> moves</div>
+      <div class="puzzle-stat" style="flex-direction:column;gap:4px;align-items:flex-start;min-width:130px;">
+        <div style="display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-chart-simple" style="color:var(--violet-soft);"></i> <span id="progressLabel" style="font-size:0.8rem;">0 / 0 pieces</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <div class="puzzle-actions">
+      <button class="ps-btn ps-btn-secondary ps-btn-sm" id="pauseBtn" title="Space to pause/resume">
+        <i class="fa-solid fa-pause"></i> Pause
+      </button>
+      <button class="ps-btn ps-btn-ghost ps-btn-sm" id="hintBtn" title="H for hint">
+        <i class="fa-solid fa-lightbulb"></i> Hint
+      </button>
+      <button class="ps-btn ps-btn-ghost ps-btn-sm" id="previewBtn" title="Hold to preview">
+        <i class="fa-solid fa-image"></i> Preview
+      </button>
+      <button class="ps-btn ps-btn-danger ps-btn-sm" id="restartBtn" title="R to restart">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="puzzle-layout">
+    <!-- Board -->
+    <div class="puzzle-board-wrap">
+      <div class="puzzle-board" id="puzzleBoard">
+        <div class="puzzle-board-overlay" id="boardOverlay"></div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+      <div class="ps-card side-card">
+        <h4>Reference</h4>
+        <div class="reference-thumb-wrap">
+          <img id="referenceThumb" class="reference-thumb" alt="Original photo" />
+          <span class="blur-toggle-hint">Hold Preview to see full</span>
+        </div>
+      </div>
+
+      <div class="ps-card side-card">
+        <h4>Keyboard Shortcuts</h4>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82rem;color:var(--text-muted);">
+          <div style="display:flex;justify-content:space-between;"><span>Pause / Resume</span><kbd class="kbd">Space</kbd></div>
+          <div style="display:flex;justify-content:space-between;"><span>Hint</span><kbd class="kbd">H</kbd></div>
+          <div style="display:flex;justify-content:space-between;"><span>Restart</span><kbd class="kbd">R</kbd></div>
+        </div>
+      </div>
+
+      <div class="ps-card side-card">
+        <h4>Scoring</h4>
+        <div style="font-size:0.82rem;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+          <div>⚡ Speed bonus: finish faster than par</div>
+          <div>🎯 Move bonus: fewer moves = more points</div>
+          <div>💡 Hint penalty: −5% per hint</div>
+          <div>🏆 Difficulty multiplier applies</div>
+        </div>
+      </div>
+
+      <a href="/leaderboard" class="ps-btn ps-btn-secondary ps-btn-block" style="text-align:center;">
+        <i class="fa-solid fa-ranking-star"></i> View Leaderboard
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Victory canvas (confetti + fireworks) -->
+<canvas id="fxCanvas"></canvas>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/puzzle.js') }}" type="module"></script>
+{% endblock %}
